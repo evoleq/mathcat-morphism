@@ -49,3 +49,9 @@ fun <S> CoroutineScope.evolve(data: S): Pair<CoroutineScope,S> = Pair(this,data)
 
 @MathCatDsl
 suspend infix fun <S, T> Pair<CoroutineScope,S>.by(arrow: ScopedSuspended<S, T>): T = arrow.morphism(first,second)
+
+@Suppress("FunctionName")
+@MathCatDsl
+fun <T> Id(): ScopedSuspended<T,T> = ScopedSuspended{
+    t->t
+}
