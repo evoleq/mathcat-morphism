@@ -30,10 +30,13 @@ interface ScopedSuspended<in S, out T> : ReadOnlyProperty<Any?, suspend Coroutin
 
     open suspend operator fun<T1> times(other: ScopedSuspended<T, T1>): ScopedSuspended<S, T1> = ScopedSuspended {
             s -> other.morphism( this, morphism(s) ) }
+    
+    @MathCatDsl
+    suspend infix fun <R> o(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = other * this
 }
 
-@Suppress("FunctionName")
 @MathCatDsl
+@Suppress("FunctionName")
 fun <S, T> ScopedSuspended(function: suspend CoroutineScope.(S)->T): ScopedSuspended<S, T> = object : ScopedSuspended<S, T> {
     override val morphism: suspend CoroutineScope.(S) -> T = function
 }

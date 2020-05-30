@@ -24,7 +24,10 @@ interface Suspended<in S, out T> : ReadOnlyProperty<Any?, suspend (S)->T> {
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): suspend (S) -> T = morphism
 
-    suspend fun<T1> times(other: Suspended<T, T1>): Suspended<S, T1> = Suspended { s -> other.morphism(morphism(s))}
+    suspend operator fun<T1> times(other: Suspended<T, T1>): Suspended<S, T1> = Suspended { s -> other.morphism(morphism(s))}
+    
+    @MathCatDsl
+    suspend infix fun<R> o(other: Suspended<R, S>): Suspended<R, T> = other * this
 }
 
 @Suppress("FunctionName")
