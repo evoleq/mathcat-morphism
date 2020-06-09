@@ -16,6 +16,7 @@
 package org.evoleq.math.cat.suspend.morphism
 
 import org.evoleq.math.cat.marker.MathCatDsl
+import org.evoleq.math.cat.marker.MathSpeakDsl
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -26,7 +27,7 @@ interface Suspended<in S, out T> : ReadOnlyProperty<Any?, suspend (S)->T> {
 
     suspend operator fun<T1> times(other: Suspended<T, T1>): Suspended<S, T1> = Suspended { s -> other.morphism(morphism(s))}
     
-    @MathCatDsl
+    @MathSpeakDsl
     suspend infix fun<R> o(other: Suspended<R, S>): Suspended<R, T> = other * this
 }
 

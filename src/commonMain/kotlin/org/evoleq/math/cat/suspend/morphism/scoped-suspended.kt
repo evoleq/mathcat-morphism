@@ -17,6 +17,7 @@ package org.evoleq.math.cat.suspend.morphism
 
 import kotlinx.coroutines.CoroutineScope
 import org.evoleq.math.cat.marker.MathCatDsl
+import org.evoleq.math.cat.marker.MathSpeakDsl
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -31,7 +32,7 @@ interface ScopedSuspended<in S, out T> : ReadOnlyProperty<Any?, suspend Coroutin
     open suspend operator fun<T1> times(other: ScopedSuspended<T, T1>): ScopedSuspended<S, T1> = ScopedSuspended {
             s -> other.morphism( this, morphism(s) ) }
     
-    @MathCatDsl
+    @MathSpeakDsl
     suspend infix fun <R> o(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = other * this
 }
 
@@ -41,20 +42,7 @@ fun <S, T> ScopedSuspended(function: suspend CoroutineScope.(S)->T): ScopedSuspe
     override val morphism: suspend CoroutineScope.(S) -> T = function
 }
 
-/**
- * Force delegation by function
- */
-@MathCatDsl
-fun <S, T> by(arrow: ScopedSuspended<S, T>): suspend CoroutineScope.(S)->T = arrow.morphism
-
-@MathCatDsl
-fun <S> CoroutineScope.evolve(data: S): Pair<CoroutineScope,S> = Pair(this,data)
-
-@MathCatDsl
-suspend infix fun <S, T> Pair<CoroutineScope,S>.by(arrow: ScopedSuspended<S, T>): T = arrow.morphism(first,second)
-
-@Suppress("FunctionName")
-@MathCatDsl
-fun <T> Id(): ScopedSuspended<T,T> = ScopedSuspended{
-    t->t
+@MathSpeakDsl
+suspend infix fun <R, S, T> (suspend CoroutineScope.(S)->T).o(other: suspend CoroutineScope.(R)->S): suspend CoroutineScope.(R)->T = {
+    r -> this@o(other(r))
 }
