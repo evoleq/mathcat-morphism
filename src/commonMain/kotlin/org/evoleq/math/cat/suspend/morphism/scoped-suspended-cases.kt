@@ -15,6 +15,9 @@
  */
 package org.evoleq.math.cat.suspend.morphism
 
+/**
+ * Flow control with [ScopedSuspended]
+ */
 suspend fun <S, T> cases(
     condition: S.()->Boolean,
     then: ScopedSuspended<S, T>,

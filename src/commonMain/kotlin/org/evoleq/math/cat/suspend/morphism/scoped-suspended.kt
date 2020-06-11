@@ -21,7 +21,10 @@ import org.evoleq.math.cat.marker.MathSpeakDsl
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-
+/**
+ * You might wish to inherit from suspend extension functions directly: If<S, T> : suspend [CoroutineScope].(S)->T.
+ * This is not possible! An elegant way to inherit from suspend functions is given by using delegation:
+ */
 interface ScopedSuspended<in S, out T> : ReadOnlyProperty<Any?, suspend CoroutineScope.(S) -> T> {
     val morphism: suspend CoroutineScope.(S)->T
 
@@ -29,19 +32,25 @@ interface ScopedSuspended<in S, out T> : ReadOnlyProperty<Any?, suspend Coroutin
 
     fun onScope(scope: CoroutineScope): Suspended<S, T> = Suspended{ s: S -> morphism(scope,s)}
 
-    open suspend operator fun<T1> times(other: ScopedSuspended<T, T1>): ScopedSuspended<S, T1> = ScopedSuspended {
+    suspend operator fun<T1> times(other: ScopedSuspended<T, T1>): ScopedSuspended<S, T1> = ScopedSuspended {
             s -> other.morphism( this, morphism(s) ) }
     
     @MathSpeakDsl
     suspend infix fun <R> o(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = other * this
 }
 
+/**
+ * Constructor function for [ScopedSuspended]
+ */
 @MathCatDsl
 @Suppress("FunctionName")
 fun <S, T> ScopedSuspended(function: suspend CoroutineScope.(S)->T): ScopedSuspended<S, T> = object : ScopedSuspended<S, T> {
     override val morphism: suspend CoroutineScope.(S) -> T = function
 }
 
+/**
+ * Function composition for scoped suspended functions
+ */
 @MathSpeakDsl
 suspend infix fun <R, S, T> (suspend CoroutineScope.(S)->T).o(other: suspend CoroutineScope.(R)->S): suspend CoroutineScope.(R)->T = {
     r -> this@o(other(r))
