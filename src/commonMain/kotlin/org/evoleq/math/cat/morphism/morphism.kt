@@ -17,12 +17,24 @@ package org.evoleq.math.cat.morphism
 
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KProperty
 
-/**
- * Function composition (f:S->T,g:R, S) -> f o g: R->T
- */
-@MathSpeakDsl
-infix fun <R, S, T> ((S)->T).o(other: (R)->S): (R)->T = {r -> this(other(r))}
+interface Morphism<S, T> : ReadOnlyProperty<Any?, (S)->T> {
+    val morphism: (S)->T
+    
+    override fun getValue(thisRef: Any?, property: KProperty<*>): (S) -> T = { s ->morphism(s)}
+    
+    
+    operator fun<T1> times(other: Morphism<T, T1>): Morphism<S, T1> = Morphism {
+        s -> other.morphism(  morphism(s) ) }
+    
+    @MathSpeakDsl
+    infix fun <R> o(other: Morphism<R, S>): Morphism<R, T> = other * this
+}
 
 @MathCatDsl
-fun <S, T> by(morphism: Morphism<S, T>): (S)->T = morphism.morphism
+@Suppress("FunctionName")
+fun <S, T> Morphism(f: (S)->T): Morphism<S, T> = object : Morphism<S, T> {
+    override val morphism: (S) -> T= f
+}
