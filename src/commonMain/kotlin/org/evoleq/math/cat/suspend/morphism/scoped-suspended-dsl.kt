@@ -45,3 +45,13 @@ suspend infix fun <S, T> Pair<CoroutineScope,S>.by(arrow: ScopedSuspended<S, T>)
 fun <T> Id(): ScopedSuspended<T,T> = ScopedSuspended{
     t->t
 }
+
+/**
+ * Transform [ScopedSuspended] to [Suspended] by injecting a [CoroutineScope]
+ */
+@MathCatDsl
+fun <S, T> ScopedSuspended<S, T>.onScope(scope: CoroutineScope): Suspended<S, T> = Suspended{ s: S -> morphism(scope,s)}
+
+fun <S, T> ScopedSuspended<S, T>.asKlSuspended(): KlSuspended<CoroutineScope,S, T> = KlSuspended {
+    s -> Suspended{ scope -> by(this@asKlSuspended)(scope, s) }
+}

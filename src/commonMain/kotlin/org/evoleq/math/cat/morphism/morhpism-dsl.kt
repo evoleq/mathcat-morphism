@@ -24,5 +24,14 @@ import org.evoleq.math.cat.marker.MathSpeakDsl
 @MathSpeakDsl
 infix fun <R, S, T> ((S)->T).o(other: (R)->S): (R)->T = {r -> this(other(r))}
 
+/**
+ * Mimic delegation by a function
+ */
 @MathCatDsl
 fun <S, T> by(morphism: Morphism<S, T>): (S)->T = morphism.morphism
+
+/**
+ * Pipe
+ */
+@MathCatDsl
+infix fun <S, T> ((S)->T).pipe(next: S): T = this(next)

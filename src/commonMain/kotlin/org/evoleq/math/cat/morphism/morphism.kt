@@ -20,21 +20,126 @@ import org.evoleq.math.cat.marker.MathSpeakDsl
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-interface Morphism<S, T> : ReadOnlyProperty<Any?, (S)->T> {
+/**
+ * Represent morphisms and hom-sets of the underlying type system (part of SET)
+ */
+interface Morphism<in S, out T> : ReadOnlyProperty<Any?, (S)->T> {
     val morphism: (S)->T
     
     override fun getValue(thisRef: Any?, property: KProperty<*>): (S) -> T = { s ->morphism(s)}
-    
-    
-    operator fun<T1> times(other: Morphism<T, T1>): Morphism<S, T1> = Morphism {
-        s -> other.morphism(  morphism(s) ) }
-    
-    @MathSpeakDsl
-    infix fun <R> o(other: Morphism<R, S>): Morphism<R, T> = other * this
 }
 
+/**
+ * Constructor function of [Morphism]
+ */
 @MathCatDsl
 @Suppress("FunctionName")
 fun <S, T> Morphism(f: (S)->T): Morphism<S, T> = object : Morphism<S, T> {
     override val morphism: (S) -> T= f
 }
+
+/**********************************************************************************************************************
+ *
+ * Composition
+ *
+ **********************************************************************************************************************/
+
+
+/**
+ * Compose [Morphism]s
+ */
+@MathSpeakDsl
+infix fun <R, S, T> Morphism<S, T>.o(other: Morphism<R, S>): Morphism<R, T> = other * this
+
+/**
+ * Compose [Morphism]s in the mathematically negative sense (f*g = g o f)
+ */
+operator fun<S, T, U> Morphism<S, T>.times(other: Morphism<T, U>): Morphism<S, U> = Morphism {
+    s -> other.morphism(  morphism(s) )
+}
+
+/**********************************************************************************************************************
+ *
+ * Functorial structure
+ *
+ **********************************************************************************************************************/
+/**
+ * Map
+ */
+@MathCatDsl
+infix fun <S,T,U> Morphism<S, T>.map(f:(T)->U): Morphism<S, U> = Morphism ( f o by(this) )
+
+/**
+ * Contra-map
+ */
+@MathCatDsl
+infix fun <R, S, T> Morphism<S, T>.coMap(f:(R)->S): Morphism<R, T> = Morphism ( by(this) o f)
+
+/**********************************************************************************************************************
+ *
+ * Applicative structure
+ *
+ **********************************************************************************************************************/
+/**
+ * Apply method of the applicative [Morphism]
+ */
+@MathCatDsl
+fun <R, S, T> Morphism<R, (S)->T>.apply(): (Morphism<R, S>)->Morphism<R, T> = {
+    mS -> Morphism{r ->
+        val f = by(this@apply)(r)
+        val s = by(mS)(r)
+        f(s)
+    }
+}
+/**
+ * Apply method of the applicative [Morphism]
+ */
+@MathCatDsl
+infix fun <R, S, T> Morphism<R, (S)->T>.apply(other: Morphism<R, S>): Morphism<R, T> = apply()(other)
+
+/**********************************************************************************************************************
+ *
+ * Monadic structure
+ *
+ **********************************************************************************************************************/
+/**
+ * Return the [Morphism] monad
+ */
+@MathCatDsl
+@Suppress("FunctionName")
+fun <S, T> ReturnMorphism(t: T): Morphism<S, T> = Morphism { t }
+
+/**
+ * Multiplication of th [Morphism] monad
+ */
+@MathCatDsl
+fun <S, T> Morphism<S, Morphism<S, T>>.multiply(): Morphism<S, T> = Morphism{s -> by(by(this)(s))(s)}
+
+/**
+ * Bind function of [Morphism]
+ */
+@MathCatDsl
+infix fun <S, T, U> Morphism<S, T>.bind(f: (T)->Morphism<S, U>): Morphism<S, U> = (this map f).multiply()
+
+
+/**
+ * Kleisli [Morphism]
+ */
+interface KlMorphism<B, S, T> : Morphism<S, Morphism<B, T>>
+
+/**
+ * Constructor function for [KlMorphism]
+ */
+@MathCatDsl
+@Suppress("FunctionName")
+fun <B, S, T> KlMorphism(arrow: (S)->Morphism<B, T>): KlMorphism<B, S, T> = object : KlMorphism<B, S, T> {
+    override val morphism: (S) -> Morphism<B, T> = arrow
+}
+
+/**
+ * Multiplication of [KlMorphism]s
+ */
+operator fun <B, R, S, T> KlMorphism<B, R, S>.times(other: KlMorphism<B, S, T>): KlMorphism<B, R, T> = KlMorphism{
+    r: R -> (by(this@times)(r) map by(other)).multiply()
+}
+

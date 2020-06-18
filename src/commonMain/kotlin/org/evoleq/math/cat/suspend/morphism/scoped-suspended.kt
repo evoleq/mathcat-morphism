@@ -16,6 +16,7 @@
 package org.evoleq.math.cat.suspend.morphism
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
 import kotlin.properties.ReadOnlyProperty
@@ -29,14 +30,6 @@ interface ScopedSuspended<in S, out T> : ReadOnlyProperty<Any?, suspend Coroutin
     val morphism: suspend CoroutineScope.(S)->T
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): suspend CoroutineScope.(S) -> T = { s ->morphism(s)}
-
-    fun onScope(scope: CoroutineScope): Suspended<S, T> = Suspended{ s: S -> morphism(scope,s)}
-
-    suspend operator fun<T1> times(other: ScopedSuspended<T, T1>): ScopedSuspended<S, T1> = ScopedSuspended {
-            s -> other.morphism( this, morphism(s) ) }
-    
-    @MathSpeakDsl
-    suspend infix fun <R> o(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = other * this
 }
 
 /**
@@ -48,10 +41,124 @@ fun <S, T> ScopedSuspended(function: suspend CoroutineScope.(S)->T): ScopedSuspe
     override val morphism: suspend CoroutineScope.(S) -> T = function
 }
 
+/**********************************************************************************************************************
+ *
+ * Composition
+ *
+ **********************************************************************************************************************/
+
+/**
+ * Function composition for [ScopedSuspended]
+ */
+@MathSpeakDsl
+suspend infix fun <R, S, T> ScopedSuspended<S, T>.o(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = other * this
+/**
+ * Compose [ScopedSuspended]s in the mathematically negative sense (f*g = g o f)
+ */
+suspend operator fun<S, T, U> ScopedSuspended<S, T>.times(other: ScopedSuspended<T, U>): ScopedSuspended<S, U> = ScopedSuspended {
+    s -> other.morphism( this, morphism(s) ) }
+
 /**
  * Function composition for scoped suspended functions
  */
 @MathSpeakDsl
 suspend infix fun <R, S, T> (suspend CoroutineScope.(S)->T).o(other: suspend CoroutineScope.(R)->S): suspend CoroutineScope.(R)->T = {
     r -> this@o(other(r))
+}
+/**********************************************************************************************************************
+ *
+ * Functorial structure
+ *
+ **********************************************************************************************************************/
+/**
+ * Map [ScopedSuspended]
+ */
+@MathCatDsl
+suspend infix fun <S, T, U> ScopedSuspended<S, T>.map(f: suspend CoroutineScope.(T)->U): ScopedSuspended<S, U> = ScopedSuspended {
+    s -> f(by(this@map)(s))
+}
+
+/**
+ * Contra map [ScopedSuspended]
+ */
+@MathCatDsl
+suspend infix fun <R, S, T> ScopedSuspended<S, T>.coMap(f: suspend CoroutineScope.(R)->S): ScopedSuspended<R, T> = ScopedSuspended {
+    s -> by(this@coMap)(f(s))
+}
+
+/**********************************************************************************************************************
+ *
+ * Applicative
+ *
+ **********************************************************************************************************************/
+
+/**
+ * Apply function of the applicative [ScopedSuspended]
+ */
+@MathCatDsl
+suspend fun <R, S, T> (ScopedSuspended<R, suspend CoroutineScope.(S)->T>).apply(): suspend CoroutineScope.(ScopedSuspended<R, S>)->ScopedSuspended<R, T> = {
+    sS -> ScopedSuspended{r ->
+    val f = by(this@apply)(r)
+    val s = by(sS)(r)
+    f(s)
+} }
+
+/**
+ * Apply function of the applicative [ScopedSuspended]
+ */
+@MathCatDsl
+suspend infix fun <R, S, T> (ScopedSuspended<R, suspend CoroutineScope.(S)->T>).apply(other: ScopedSuspended<R, S>): ScopedSuspended<R, T> = coroutineScope { apply()(other) }
+
+/**********************************************************************************************************************
+ *
+ * Monadic structure
+ *
+ **********************************************************************************************************************/
+/**
+ * Return function of the [ScopedSuspended] monad
+ */
+@MathCatDsl
+@Suppress("FunctionName")
+fun <S, T> ReturnScopedSuspended(value: T): ScopedSuspended<S, T> = ScopedSuspended { value }
+
+/**
+ * Multiplication on the [ScopedSuspended] monad
+ */
+suspend fun <S, T> ScopedSuspended<S, ScopedSuspended<S, T>>.multiply(): ScopedSuspended<S, T> = ScopedSuspended{
+    s -> by(by(this@multiply)(s))(s)
+}
+
+/**
+ * Bind function on the [ScopedSuspended] monad
+ */
+suspend fun <S, T, U> ScopedSuspended<S, T>.bind(f: suspend CoroutineScope.(T)->ScopedSuspended<S, U>): ScopedSuspended<S, U> = (this map f).multiply()
+
+
+
+/**
+ * Kleisli [ScopedSuspended]
+ */
+interface KlScopedSuspended<B, S, T> : ScopedSuspended<S, ScopedSuspended<B, T>>
+
+/**
+ * Constructor function for [KlScopedSuspended]
+ */
+@MathCatDsl
+@Suppress("FunctionName")
+fun <B, S, T> KlScopedSuspended(arrow: suspend CoroutineScope.(S)-> ScopedSuspended<B, T>): KlScopedSuspended<B, S, T> = object : KlScopedSuspended<B, S, T> {
+    override val morphism: suspend CoroutineScope.(S) -> ScopedSuspended<B, T> = arrow
+}
+
+/**
+ * Identity element of the [KlScopedSuspended]
+ */
+@MathCatDsl
+@Suppress("FunctionName")
+fun <S, T> KlReturnScopedSuspended(t: T): KlScopedSuspended<S, T, T> = KlScopedSuspended { ReturnScopedSuspended(t) }
+
+/**
+ * Multiplication of [KlScopedSuspended]s
+ */
+operator fun <B, R, S, T> KlScopedSuspended<B, R, S>.times(other: KlScopedSuspended<B, S, T>): KlScopedSuspended<B, R, T> = KlScopedSuspended{
+    r: R -> ((by(this@times))(r) map by(other)).multiply()
 }
