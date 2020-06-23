@@ -16,6 +16,7 @@
 package org.evoleq.math.cat.suspend.morphism
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import org.evoleq.math.cat.marker.MathCatDsl
 
 
@@ -55,3 +56,16 @@ fun <S, T> ScopedSuspended<S, T>.onScope(scope: CoroutineScope): Suspended<S, T>
 fun <S, T> ScopedSuspended<S, T>.asKlSuspended(): KlSuspended<CoroutineScope,S, T> = KlSuspended {
     s -> Suspended{ scope -> by(this@asKlSuspended)(scope, s) }
 }
+
+
+/**
+ * Evaluation
+ */
+@MathCatDsl
+suspend fun <S, T> Pair<suspend CoroutineScope.(S)->T,S>.evaluate(): T = coroutineScope { first(second) }
+
+/**
+ * Evaluation
+ */
+@MathCatDsl
+suspend fun <S, T> Pair<ScopedSuspended<S, T>,S>.evaluate(): T = coroutineScope { by(first)(second) }

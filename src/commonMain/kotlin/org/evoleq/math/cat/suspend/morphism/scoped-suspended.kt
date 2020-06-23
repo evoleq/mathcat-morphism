@@ -17,8 +17,10 @@ package org.evoleq.math.cat.suspend.morphism
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import org.evoleq.math.cat.functor.Diagonal
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
+import org.evoleq.math.cat.structure.x
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -97,10 +99,7 @@ suspend infix fun <R, S, T> ScopedSuspended<S, T>.coMap(f: suspend CoroutineScop
  */
 @MathCatDsl
 suspend fun <R, S, T> (ScopedSuspended<R, suspend CoroutineScope.(S)->T>).apply(): suspend CoroutineScope.(ScopedSuspended<R, S>)->ScopedSuspended<R, T> = {
-    sS -> ScopedSuspended{r ->
-    val f = by(this@apply)(r)
-    val s = by(sS)(r)
-    f(s)
+    sS -> ScopedSuspended{r ->   (by(this@apply) x by(sS)) (Diagonal(r)).evaluate()
 } }
 
 /**

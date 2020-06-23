@@ -35,3 +35,9 @@ fun <S, T> by(morphism: Morphism<S, T>): (S)->T = morphism.morphism
  */
 @MathCatDsl
 infix fun <S, T> ((S)->T).pipe(next: S): T = this(next)
+
+/**
+ * Evaluation
+ */
+@MathCatDsl
+fun <S, T> Pair<(S)->T,S>.evaluate(): T = first(second)

@@ -20,3 +20,10 @@ fun <S, T> by(suspended: Suspended<S, T>): suspend (S)->T = suspended.morphism
  */
 @MathCatDsl
 suspend infix fun <S, T> (suspend (S)->T).pipe(next: S): T = this(next)
+
+
+/**
+ * Evaluation
+ */
+@MathCatDsl
+suspend fun <S, T> Pair<suspend (S)->T,S>.evaluate(): T = first(second)

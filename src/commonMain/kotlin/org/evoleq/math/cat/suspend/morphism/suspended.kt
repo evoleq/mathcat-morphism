@@ -15,8 +15,10 @@
  */
 package org.evoleq.math.cat.suspend.morphism
 
+import org.evoleq.math.cat.functor.Diagonal
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
+import org.evoleq.math.cat.structure.x
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
@@ -87,18 +89,14 @@ suspend infix fun <R, S, T> Suspended<S, T>.coMap(f: suspend (R)->S): Suspended<
  * Apply method of the applicative [Suspended]
  */
 @MathCatDsl
-fun <R, S, T> Suspended<R, (S) -> T>.apply(): (Suspended<R, S>)-> Suspended<R, T> = {
-    mS -> Suspended{r ->
-    val f = (by(this@apply))(r)
-    val s = (by(mS))(r)
-    f(s)
-}
+fun <R, S, T> Suspended<R, suspend (S) -> T>.apply(): (Suspended<R, S>)-> Suspended<R, T> = {
+    mS -> Suspended{r ->   (by(this@apply) x by(mS)) (Diagonal(r)).evaluate() }
 }
 /**
  * Apply method of the applicative [Suspended]
  */
 @MathCatDsl
-infix fun <R, S, T> Suspended<R, (S) -> T>.apply(other: Suspended<R, S>): Suspended<R, T> = apply()(other)
+infix fun <R, S, T> Suspended<R, suspend (S) -> T>.apply(other: Suspended<R, S>): Suspended<R, T> = apply()(other)
 
 /**********************************************************************************************************************
  *
