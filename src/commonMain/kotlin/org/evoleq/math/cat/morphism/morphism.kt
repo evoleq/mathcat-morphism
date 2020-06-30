@@ -15,17 +15,15 @@
  */
 package org.evoleq.math.cat.morphism
 
-import org.evoleq.math.cat.functor.Diagonal
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
-import org.evoleq.math.cat.structure.x
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 /**
  * Represent morphisms and hom-sets of the underlying type system (part of SET)
  */
-interface Morphism<in S, out T> : ReadOnlyProperty<Any?, (S)->T> {
+interface Morphism<S, T> :  ReadOnlyProperty<Any?, (S)->T> {
     val morphism: (S)->T
     
     override fun getValue(thisRef: Any?, property: KProperty<*>): (S) -> T = { s ->morphism(s)}
@@ -87,7 +85,7 @@ infix fun <R, S, T> Morphism<S, T>.coMap(f:(R)->S): Morphism<R, T> = Morphism ( 
  */
 @MathCatDsl
 fun <R, S, T> Morphism<R, (S)->T>.apply(): (Morphism<R, S>)->Morphism<R, T> = {
-    mS -> Morphism{r ->   (by(this@apply) x by(mS)) (Diagonal(r)).evaluate() }
+    mS -> this@apply bind { f -> mS map f }
 }
 /**
  * Apply method of the applicative [Morphism]
