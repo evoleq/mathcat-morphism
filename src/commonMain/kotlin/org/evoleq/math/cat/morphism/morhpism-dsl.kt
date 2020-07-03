@@ -17,6 +17,7 @@ package org.evoleq.math.cat.morphism
 
 import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
+import org.evoleq.math.cat.structure.x
 
 /**
  * Function composition (f:S->T,g:R, S) -> f o g: R->T
@@ -36,8 +37,25 @@ fun <S, T> by(morphism: Morphism<S, T>): (S)->T = morphism.morphism
 @MathCatDsl
 infix fun <S, T> ((S)->T).pipe(next: S): T = this(next)
 
+
+
+/**
+ * Uncurry
+ */
+@MathCatDsl
+fun <R, S, T> ((R)->(S)->T).unCurry(): (Pair<R, S>)->T = {pair -> this(pair.first)(pair.second) }
+
 /**
  * Evaluation
  */
 @MathCatDsl
 fun <S, T> Pair<(S)->T,S>.evaluate(): T = first(second)
+
+@MathCatDsl
+fun <R, S, T> fork(f: (R)->S, g: (R)->T): (R)->Pair<S, T> = {r -> f(r) x g(r)}
+
+@MathCatDsl
+fun <R, S, T> ((R)->Pair<S, T>).unFork(): (Pair<R, R>)->Pair<S, T> = {pair -> Pair(this(pair.first).first, this(pair.second).second)}
+
+@MathCatDsl
+fun <R, S, T> ((Pair<R, S>)->T).swap(): (Pair<S, R>)->T = {pair -> this(pair.second x pair.first)}

@@ -18,6 +18,7 @@ package org.evoleq.math.cat.suspend.morphism
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
 import org.evoleq.math.cat.marker.MathCatDsl
+import org.evoleq.math.cat.structure.x
 
 
 /**
@@ -61,11 +62,29 @@ fun <S, T> ScopedSuspended<S, T>.asKlSuspended(): KlSuspended<CoroutineScope,S, 
 /**
  * Evaluation
  */
+/*
 @MathCatDsl
 suspend fun <S, T> Pair<suspend CoroutineScope.(S)->T,S>.evaluate(): T = coroutineScope { first(second) }
 
+
+ */
 /**
  * Evaluation
  */
 @MathCatDsl
 suspend fun <S, T> Pair<ScopedSuspended<S, T>,S>.evaluate(): T = coroutineScope { by(first)(second) }
+
+/**
+* Uncurry
+*/
+@MathCatDsl
+suspend fun <R, S, T> (suspend CoroutineScope.(R)->suspend CoroutineScope.(S)->T).unCurry(): suspend CoroutineScope.(Pair<R, S>)->T = {pair -> this@unCurry(pair.first)(pair.second) }
+
+@MathCatDsl
+suspend fun <R, S, T> fork(f: suspend CoroutineScope.(R)->S, g: suspend CoroutineScope.(R)->T): suspend CoroutineScope.(R)->Pair<S, T> = {r -> f(r) x g(r)}
+
+@MathCatDsl
+suspend fun <R, S, T> (suspend CoroutineScope.(R)->Pair<S, T>).unFork(): suspend CoroutineScope.(Pair<R, R>)->Pair<S, T> = {pair -> Pair(this@unFork(pair.first).first, this@unFork(pair.second).second)}
+
+@MathCatDsl
+suspend fun <R, S, T> (suspend CoroutineScope.(Pair<R, S>)->T).swap(): suspend CoroutineScope.(Pair<S, R>)->T = {pair -> this@swap(pair.second x pair.first)}
