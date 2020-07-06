@@ -48,6 +48,7 @@ fun <T> Id(): ScopedSuspended<T,T> = ScopedSuspended{
     t->t
 }
 
+fun <T> id(): suspend CoroutineScope.(T)->T = {t->t}
 /**
  * Transform [ScopedSuspended] to [Suspended] by injecting a [CoroutineScope]
  */

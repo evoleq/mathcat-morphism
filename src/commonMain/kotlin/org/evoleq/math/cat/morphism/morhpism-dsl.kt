@@ -19,6 +19,13 @@ import org.evoleq.math.cat.marker.MathCatDsl
 import org.evoleq.math.cat.marker.MathSpeakDsl
 import org.evoleq.math.cat.structure.x
 
+@MathCatDsl
+@Suppress("FunctionName")
+fun <T> Id(): Morphism<T, T> = Morphism { t->t }
+
+@MathCatDsl
+fun <T> id(): (T)->T = {t->t}
+
 /**
  * Function composition (f:S->T,g:R, S) -> f o g: R->T
  */
