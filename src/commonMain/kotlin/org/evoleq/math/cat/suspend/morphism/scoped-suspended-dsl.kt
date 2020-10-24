@@ -82,11 +82,20 @@ suspend fun <S, T> Pair<ScopedSuspended<S, T>,S>.evaluate(): T = coroutineScope 
 @MathCatDsl
 suspend fun <R, S, T> (suspend CoroutineScope.(R)->suspend CoroutineScope.(S)->T).unCurry(): suspend CoroutineScope.(Pair<R, S>)->T = {pair -> this@unCurry(pair.first)(pair.second) }
 
+/**
+ * Fork
+ */
 @MathCatDsl
 suspend fun <R, S, T> fork(f: suspend CoroutineScope.(R)->S, g: suspend CoroutineScope.(R)->T): suspend CoroutineScope.(R)->Pair<S, T> = {r -> f(r) x g(r)}
 
+/**
+ * Unfork
+ */
 @MathCatDsl
 suspend fun <R, S, T> (suspend CoroutineScope.(R)->Pair<S, T>).unFork(): suspend CoroutineScope.(Pair<R, R>)->Pair<S, T> = {pair -> Pair(this@unFork(pair.first).first, this@unFork(pair.second).second)}
 
+/**
+ * Swap
+ */
 @MathCatDsl
 suspend fun <R, S, T> (suspend CoroutineScope.(Pair<R, S>)->T).swap(): suspend CoroutineScope.(Pair<S, R>)->T = {pair -> this@swap(pair.second x pair.first)}
